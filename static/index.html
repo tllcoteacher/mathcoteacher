@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Math Assessment Prototype</title>
+    <!-- Include Konva.js library -->
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <style>
+        body { font-family: sans-serif; }
+        #container {
+            border: 1px solid grey;
+            width: 600px; /* Adjust size as needed */
+            height: 400px; /* Adjust size as needed */
+            margin-bottom: 10px;
+        }
+        #controls { margin-top: 10px; }
+        #prompt-area { margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+        #response-area { margin-top: 10px; }
+        #messages { margin-top: 10px; max-height: 150px; overflow-y: scroll; border: 1px dashed lightgrey; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Math Assessment Task: 6x8</h1>
+    <p>Draw your work below, then click Done Drawing.</p>
+
+    <!-- Konva canvas container -->
+    <div id="container"></div>
+
+    <div id="controls">
+        <button id="doneDrawingBtn" onclick="sendActionComplete()">Done Drawing</button>
+        <button onclick="clearCanvas()">Clear Canvas</button> <!-- Added Clear Button -->
+    </div>
+
+    <!-- Area for AI probes -->
+    <div id="prompt-area"></div>
+
+    <!-- Area for text response (initially hidden) -->
+    <div id="response-area" style="display: none;">
+        <input type="text" id="responseText" placeholder="Type your explanation here"/>
+        <button onclick="sendTextResponse()">Send Response</button>
+    </div>
+
+    <!-- Area for status messages -->
+    <h2>Status / Log:</h2>
+    <div id="messages"></div>
+
+    <script>
+        // --- WebSocket Setup ---
+        const ws = new WebSocket("ws://127.0.0.1:8000/ws"); // Use 127.0.0.1
+        const messagesDiv = document.getElementById('messages');
+        const promptArea = document.getElementById('prompt-area');
+        const responseArea = document.getElementById('response-area');
+        const responseTextInput = document.getElementById('responseText');
+        const doneDrawingBtn = document.getElementById('doneDrawingBtn');
+
+        ws.onopen = (event) => {
+            logMessage("WebSocket connection opened.");
+            console.log("WebSocket opened:", event);
+        };
+        ws.onerror = (event) => {
+            logMessage("WebSocket error. Check console.");
+            console.error("WebSocket error:", event);
+        };
+        ws.onclose = (event) => {
+            logMessage(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`);
+            console.log("WebSocket closed:", event);
+            // Disable controls maybe?
+            doneDrawingBtn.disabled = true;
+            // Consider adding a reconnect attempt button/logic if needed
+        };
+
+        // --- Konva Setup ---
+        const width = 600;
+        const height = 400;
+        let isPaint = false;
+        let lastLine;
+        let currentStrokeData = []; // To hold points for the current stroke
+
+        const stage = new Konva.Stage({
+            container: 'container', // ID of the div container
+            width: width,
+            height: height,
+        });
+
+        const layer = new Konva.Layer();
+        stage.add(layer);
+
+        // --- Drawing Event Handlers ---
+        stage.on('mousedown touchstart', function (e) {
+            isPaint = true;
+            const pos = stage.getPointerPosition();
+            // Start a new line and a new stroke data array
+            currentStrokeData = [Math.round(pos.x), Math.round(pos.y)]; // Start with the first point
+            lastLine = new Konva.Line({
+                stroke: '#000000', // Black color
+                strokeWidth: 3,
+                globalCompositeOperation: 'source-over',
+                lineCap: 'round',
+                lineJoin: 'round',
+                // Start line with single point for tap drawing capability
+                points: [pos.x, pos.y, pos.x, pos.y],
+            });
+            layer.add(lastLine);
+        });
+
+        stage.on('mouseup touchend', function () {
+            if (!isPaint) return;
+            isPaint = false;
+            // Send the completed stroke data
+            if (currentStrokeData.length > 2) { // Only send if more than just a click
+                 sendWebSocketMessage({
+                     type: "draw_stroke",
+                     task_id: "6x8", // Hardcoded for now
+                     stroke_data: currentStrokeData // Send the collected points
+                 });
+            }
+            currentStrokeData = []; // Reset for next stroke
+            // Optional: Log the stroke data sent
+            // console.log("Sent stroke data:", currentStrokeData);
+        });
+
+        // Throttle mousemove events to avoid flooding WebSocket
+        let lastSendTime = 0;
+        const throttleDelay = 50; // ms - send updates max every 50ms
+
+        stage.on('mousemove touchmove', function (e) {
+            if (!isPaint) return;
+
+            const pos = stage.getPointerPosition();
+            let points = lastLine.points().concat([pos.x, pos.y]);
+            lastLine.points(points);
+            layer.batchDraw(); // More efficient redraw
+
+            // Add point to our stroke data array
+            currentStrokeData.push(Math.round(pos.x), Math.round(pos.y));
+
+             // --- Throttling (Optional but good practice) ---
+            // const now = Date.now();
+            // if (now - lastSendTime > throttleDelay) {
+            //     sendWebSocketMessage({ // Example: sending partial strokes (might be too chatty)
+            //         type: "draw_stroke_partial",
+            //         task_id: "6x8",
+            //         stroke_data: currentStrokeData
+            //     });
+            //     lastSendTime = now;
+            // }
+        });
+
+        // --- Communication Functions ---
+        function sendWebSocketMessage(messageObject) {
+            if (ws.readyState === WebSocket.OPEN) {
+                const messageString = JSON.stringify(messageObject);
+                ws.send(messageString);
+                logMessage(`Sent: ${messageString}`);
+                console.log("Sent message:", messageObject);
+            } else {
+                logMessage("WebSocket is not open. Cannot send message.");
+                console.error("WebSocket not open. State:", ws.readyState);
+            }
+        }
+
+        function sendActionComplete() {
+            logMessage("'Done Drawing' clicked.");
+            sendWebSocketMessage({ type: "action_complete", task_id: "6x8" });
+            // Maybe disable drawing here?
+            doneDrawingBtn.disabled = true; // Disable after clicking
+        }
+
+        function sendTextResponse() {
+            const text = responseTextInput.value;
+            if (text) {
+                logMessage(`Sending text response: ${text}`);
+                sendWebSocketMessage({
+                    type: "submit_text_response",
+                    task_id: "6x8",
+                    text: text
+                });
+                responseTextInput.value = ''; // Clear input
+                responseArea.style.display = 'none'; // Hide after sending
+            }
+        }
+
+        // Handle Enter key for text response
+        responseTextInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendTextResponse();
+            }
+        });
+
+        function clearCanvas() {
+            layer.destroyChildren(); // Remove all shapes
+            layer.batchDraw(); // Redraw the empty layer
+            logMessage("Canvas cleared.");
+            // Consider if backend needs notification of clear? For now, no.
+        }
+
+        // --- Handling Messages from Server ---
+        ws.onmessage = (event) => {
+            logMessage(`Received raw: ${event.data}`);
+            console.log("Received raw message:", event.data);
+            try {
+                const message = JSON.parse(event.data);
+                logMessage(`Received parsed type: ${message.type}`);
+                console.log("Received parsed message:", message);
+
+                switch (message.type) {
+                    case 'ask_probe':
+                        promptArea.textContent = message.text;
+                        if (message.speak && 'speechSynthesis' in window) {
+                            const utterance = new SpeechSynthesisUtterance(message.text);
+                            window.speechSynthesis.speak(utterance);
+                        }
+                        // Show the text response area
+                        responseArea.style.display = 'block';
+                        responseTextInput.focus(); // Focus the input field
+                        break;
+                    case 'assessment_complete':
+                        promptArea.textContent = `Assessment Complete: ${message.result_summary}`;
+                        responseArea.style.display = 'none'; // Hide response area
+                        doneDrawingBtn.disabled = true; // Keep disabled
+                        break;
+                    case 'error':
+                         promptArea.textContent = `Error from server: ${message.message}`;
+                         logMessage(`Server Error: ${message.message}`);
+                         break;
+                    default:
+                        logMessage(`Received unknown message type: ${message.type}`);
+                }
+            } catch (error) {
+                logMessage(`Error parsing message: ${error}`);
+                console.error("Failed to parse message JSON:", error);
+            }
+        };
+
+        // --- Utility Functions ---
+        function logMessage(message) {
+            const now = new Date();
+            const timeString = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            messagesDiv.innerHTML += `<p>[${timeString}] ${message}</p>`;
+            // Auto-scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+    </script>
+</body>
+</html>

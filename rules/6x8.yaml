@@ -1,0 +1,34 @@
+# Basic rules for the 6x8 task - simplified for initial testing
+
+task_id: "6x8"
+concept: "Single Digit Multiplication"
+
+# Define potential levels (just names for now)
+levels:
+  SD1_1:
+    description: "Counts physical or visual objects by ones"
+  SD3_1:
+    description: "Directly recalls basic multiplication/division facts"
+
+# Define basic evidence types we might look for (simplified)
+evidence_codes:
+  DRAW_ANY: "Student drew something on the canvas"
+  ANSWER_TYPED: "Student typed an answer text"
+
+# Define probes associated with certain conditions (very simple logic placeholder)
+probes:
+  - id: P1_HOW_SOLVE
+    text: "Tell me how you figured that out."
+    speak: true
+    trigger_condition: # When to ask this probe
+      requires_evidence: ["DRAW_ANY"] # Ask if student drew *anything*
+
+# Define how assessment stops (simplified)
+stop_conditions:
+  - id: SC1_ANSWERED
+    requires_evidence: ["ANSWER_TYPED"] # Stop if student types *anything*
+
+# Placeholder for assigning level (will be more complex later)
+level_assignment:
+  - level: SD1_1 # Assign this level...
+    requires_evidence: ["DRAW_ANY", "ANSWER_TYPED"] # ...if they drew and typed something
