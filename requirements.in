@@ -1,0 +1,5 @@
+# requirements.in - Top-level dependencies
+fastapi
+uvicorn[standard]
+pyyaml
+pydantic

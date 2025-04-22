@@ -45,7 +45,25 @@
 
     <script>
         // --- WebSocket Setup ---
-        const ws = new WebSocket("ws://127.0.0.1:8000/ws"); // Use 127.0.0.1
+        // Determine the WebSocket protocol based on the page protocol
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+        // Get the server hostname from the current URL
+        const wsHostname = window.location.hostname;
+
+        // Construct the WebSocket URL. We'll use port 8000 for now during development.
+        // IMPORTANT: For production, you might need more complex logic if your
+        // backend WebSocket runs on a different port than your web server.
+        // But for localhost development with FastAPI/Uvicorn default, this works.
+        const wsPort = 8000; // Assuming your FastAPI still runs on port 8000
+        const wsUrl = `${wsProtocol}//${wsHostname}:${wsPort}/ws`;
+
+        console.log("Connecting to WebSocket at:", wsUrl); // Good for debugging!
+
+        // Create the WebSocket connection
+        const ws = new WebSocket(wsUrl);
+
+        // ... rest of your WebSocket handling code 
         const messagesDiv = document.getElementById('messages');
         const promptArea = document.getElementById('prompt-area');
         const responseArea = document.getElementById('response-area');
