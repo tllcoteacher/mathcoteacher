@@ -3,3 +3,5 @@ fastapi
 uvicorn[standard]
 pyyaml
 pydantic
+ruff
+pytest
