@@ -1,34 +1,46 @@
-# Basic rules for the 6x8 task - simplified for initial testing
+# Rules for the 6x8 task - Updated for Refined Evidence Extraction
 
 task_id: "6x8"
-concept: "Single Digit Multiplication"
+description: "Multiplication 6x8 Assessment (Using Refined Evidence)"
 
-# Define potential levels (just names for now)
-levels:
-  SD1_1:
-    description: "Counts physical or visual objects by ones"
-  SD3_1:
-    description: "Directly recalls basic multiplication/division facts"
+# Prompt to start the task
+initial_prompt:
+  text: "Show me how you would figure out 6 times 8. You can draw or type."
+  speak: true # Optional: Suggests text-to-speech for the prompt
 
-# Define basic evidence types we might look for (simplified)
-evidence_codes:
-  DRAW_ANY: "Student drew something on the canvas"
-  ANSWER_TYPED: "Student typed an answer text"
-
-# Define probes associated with certain conditions (very simple logic placeholder)
+# Define potential probes (questions to ask during the assessment)
 probes:
   - id: P1_HOW_SOLVE
     text: "Tell me how you figured that out."
     speak: true
-    trigger_condition: # When to ask this probe
-      requires_evidence: ["DRAW_ANY"] # Ask if student drew *anything*
+    # NOTE: The condition to *trigger* this probe (e.g., requiring DRAW_ONE_STROKE)
+    # is currently handled directly in the assessment_engine/engine.py code.
+    # A more advanced rules engine might define the trigger condition here.
 
-# Define how assessment stops (simplified)
+# Define conditions under which the assessment stops
 stop_conditions:
-  - id: SC1_ANSWERED
-    requires_evidence: ["ANSWER_TYPED"] # Stop if student types *anything*
+  - id: SC1 # Renamed for consistency with examples
+    # Stop if the student specifically mentions "count"
+    required_evidence:
+      - EVIDENCE_SAID_COUNT
+      # You could potentially add DRAW_ONE_STROKE here too if needed:
+      # - DRAW_ONE_STROKE
 
-# Placeholder for assigning level (will be more complex later)
+# Define how a final level/outcome is assigned (simplified placeholder)
 level_assignment:
-  - level: SD1_1 # Assign this level...
-    requires_evidence: ["DRAW_ANY", "ANSWER_TYPED"] # ...if they drew and typed something
+  - level: "SD1_1 (Placeholder)" # Use the placeholder name consistent with engine code
+    # Assign this level if they drew ONE stroke AND mentioned "count"
+    required_evidence:
+      - DRAW_ONE_STROKE
+      - EVIDENCE_SAID_COUNT
+  # Example of another rule you might add later:
+  # - level: "SD1_2 (Placeholder - Multiple Strokes)"
+  #   required_evidence:
+  #     - DRAW_MULTIPLE_STROKES
+  #     - EVIDENCE_SAID_COUNT
+
+# --- Removed Sections ---
+# The 'levels' and 'evidence_codes' sections from the previous version were removed
+# as they are not directly used by the current engine logic.
+# Evidence codes are now defined in assessment_engine/evidence.py (Evidence Enum).
+# Level descriptions could be stored elsewhere or added back later if needed for reporting.

@@ -61,12 +61,7 @@ class AssessmentSession:
             log.warning(f"Task {self.task_id}: Processing event after assessment complete.")
             return None
 
-        # --- ***** ADD THIS LINE ***** ---
-        # Ensure action_to_send is initialized to None in all execution paths within this function's scope
         action_to_send: Optional[Dict[str, Any]] = None
-        # --- ************************* ---
-
-        # Use a list to collect new evidence found in this specific event processing step
         new_evidence_this_step: Set[Evidence] = set()
 
         # --- Event Type Handling ---
@@ -74,34 +69,33 @@ class AssessmentSession:
             stroke_count = self.current_step_state.get("stroke_count", 0) + 1
             self.current_step_state["stroke_count"] = stroke_count
             log.debug(f"Task {self.task_id}: Stroke {stroke_count} received.")
-            # No action_to_send assignment needed here
 
         elif isinstance(event, ActionCompleteMessage):
             log.info(f"Task {self.task_id}: Action complete received.")
-            # Finalize drawing evidence
             stroke_count = self.current_step_state.get("stroke_count", 0)
             if stroke_count == 1:
                  new_evidence_this_step.add(Evidence.DRAW_ONE_STROKE)
             elif stroke_count > 1:
                  new_evidence_this_step.add(Evidence.DRAW_MULTIPLE_STROKES)
 
-            # Reset stroke count for the next action step
             self.current_step_state["stroke_count"] = 0
 
             # --- Probe Logic ---
             combined_evidence = self.collected_evidence.union(new_evidence_this_step)
-            # Example: Check if probe P1 needs to be asked (adjust Evidence code as needed for your rules)
-            if Evidence.DRAW_ONE_STROKE in combined_evidence and "P1_HOW_SOLVE" not in self.probes_asked:
+
+            # --- ***** MODIFIED LINE ***** ---
+            # Ask probe if *EITHER* single OR multiple strokes evidence exists (and probe not asked yet)
+            if (Evidence.DRAW_ONE_STROKE in combined_evidence or Evidence.DRAW_MULTIPLE_STROKES in combined_evidence) and "P1_HOW_SOLVE" not in self.probes_asked:
+            # --- ************************* ---
                  probe_to_ask = next((p for p in self.rules.get("probes", []) if p["id"] == "P1_HOW_SOLVE"), None)
                  if probe_to_ask:
-                     # Assign action_to_send *only if probe is found*
                      action_to_send = {
                          "type": "ask_probe",
                          "text": probe_to_ask["text"],
                          "speak": probe_to_ask.get("speak", False)
                      }
                      self.probes_asked.add("P1_HOW_SOLVE")
-                     log.info(f"Task {self.task_id}: Sending probe P1_HOW_SOLVE.")
+                     log.info(f"Task {self.task_id}: Sending probe P1_HOW_SOLVE based on drawing evidence.")
                  else:
                      log.warning(f"Task {self.task_id}: Probe P1_HOW_SOLVE defined in logic but not found in rules file.")
 
@@ -134,7 +128,6 @@ class AssessmentSession:
                 self.final_level = level_assigned
                 self.assessment_complete = True
                 log.info(f"Assessment complete for task {self.task_id}. Level assigned: {self.final_level}")
-                # Assign action_to_send for completion message
                 action_to_send = {
                     "type": "assessment_complete",
                     "task_id": self.task_id,
@@ -150,7 +143,6 @@ class AssessmentSession:
                   new_evidence_this_step.update(extracted)
         else:
              log.error(f"Task {self.task_id}: Received invalid or unhandled event data format: {type(event)}")
-             # Optionally assign an error action
              action_to_send = {"type": "error", "message": "Invalid event format received by engine."}
 
 
@@ -161,7 +153,6 @@ class AssessmentSession:
 
 
         log.debug(f"Task {self.task_id}: process_event returning action: {action_to_send}")
-        # The function will now return the value of action_to_send (which is None if not assigned elsewhere)
         return action_to_send
 
 
