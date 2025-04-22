@@ -23,10 +23,9 @@ except ImportError:
     SubmitTextResponseMessage = Dict[str, Any]
 
 # Assuming loader is in the same directory or configured correctly in path
-from .loader import load_rule_file
-
 # --- Import Evidence Enum and Extractor ---
 from .evidence import Evidence, extract_from_text
+from .loader import load_rule_file
 
 log = logging.getLogger(__name__)
 
