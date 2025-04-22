@@ -40,9 +40,7 @@ active_sessions: dict[WebSocket, AssessmentSession] = {}
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     log.info(f"WebSocket connection accepted from {websocket.client}.")
-    session: AssessmentSession | None = (
-        None  # Initialize session variable for this connection
-    )
+    session: AssessmentSession | None = None  # Initialize session variable for this connection
 
     try:
         while True:
@@ -112,9 +110,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             f"Created AssessmentSession for task '{task_id_to_use}' for {websocket.client}. Total sessions: {len(active_sessions)}"
                         )
                     except ValueError as e:
-                        log.error(
-                            f"Failed to create session for task '{task_id_to_use}': {e}"
-                        )
+                        log.error(f"Failed to create session for task '{task_id_to_use}': {e}")
                         await websocket.send_json(
                             {
                                 "type": "error",
@@ -143,9 +139,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # (DrawStrokeMessage, ActionCompleteMessage, SubmitTextResponseMessage)
                 # instead of just a raw dictionary.
                 # **************************
-                if (
-                    session
-                ):  # Should always be true after the block above, but check anyway
+                if session:  # Should always be true after the block above, but check anyway
                     try:
                         action_to_send = session.process_event(
                             validated_data
@@ -163,9 +157,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             # break # Option: Close connection immediately on completion
 
                     except Exception as e:
-                        log.error(
-                            f"Error processing event in engine: {e}", exc_info=True
-                        )
+                        log.error(f"Error processing event in engine: {e}", exc_info=True)
                         await websocket.send_json(
                             {"type": "error", "message": "Error processing event."}
                         )
@@ -177,9 +169,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 break  # Exit the while loop
             except json.JSONDecodeError:
                 # Handle cases where the received data isn't valid JSON at all
-                log.warning(
-                    f"Received non-JSON message from {websocket.client}, ignoring."
-                )
+                log.warning(f"Received non-JSON message from {websocket.client}, ignoring.")
                 await websocket.send_json(
                     {
                         "type": "error",
@@ -207,9 +197,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except Exception as e:
         # Catch unexpected errors outside the main message loop but within endpoint scope
-        log.error(
-            f"Unexpected WebSocket error for {websocket.client}: {e}", exc_info=True
-        )
+        log.error(f"Unexpected WebSocket error for {websocket.client}: {e}", exc_info=True)
 
     finally:
         # --- Cleanup ---
@@ -241,9 +229,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 f"RuntimeError closing websocket during cleanup (likely already closed): {e}"
             )
         except Exception as e:
-            log.error(
-                f"Unexpected error closing websocket during cleanup: {e}", exc_info=True
-            )
+            log.error(f"Unexpected error closing websocket during cleanup: {e}", exc_info=True)
 
 
 # --- Root path to serve the HTML file ---

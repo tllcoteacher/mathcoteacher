@@ -1,6 +1,7 @@
 # assessment_engine/evidence.py
 import logging
 from enum import Enum
+from typing import Set  # Moved import to top
 
 log = logging.getLogger(__name__)
 
@@ -8,7 +9,9 @@ log = logging.getLogger(__name__)
 class Evidence(str, Enum):
     """
     Enumeration of specific evidence codes derived from student actions.
-    Using str mixin so the enum members can be easily compared and serialized (e.g., to JSON or YAML).
+
+    Using str mixin so the enum members can be easily compared and serialized
+    (e.g., to JSON or YAML).
     """
 
     # === General Actions ===
@@ -16,13 +19,15 @@ class Evidence(str, Enum):
     ANSWER_TYPED = "ANSWER_TYPED"  # Any text answer was typed
 
     # === Drawing Specific (Example Refinements) ===
-    DRAW_ONE_STROKE = (
-        "DRAW_ONE_STROKE"  # Exactly one stroke was made in an action phase
+    DRAW_ONE_STROKE = "DRAW_ONE_STROKE"  # Exactly one stroke was made in an action phase
+    DRAW_MULTIPLE_STROKES = (
+        "DRAW_MULTIPLE_STROKES"  # More than one stroke was made
     )
-    DRAW_MULTIPLE_STROKES = "DRAW_MULTIPLE_STROKES"  # More than one stroke was made
 
     # === Text Specific (Example Refinements) ===
-    EVIDENCE_SAID_COUNT = "EVIDENCE_SAID_COUNT"  # Student response included the keyword "count" (case-insensitive)
+    EVIDENCE_SAID_COUNT = (
+        "EVIDENCE_SAID_COUNT"  # Student response included "count" (case-insensitive)
+    )
 
     # === Add more specific evidence codes as needed ===
     # e.g., DREW_GROUPS, DREW_ARRAY, SAID_MULTIPLY, USED_NUMBER_LINE, etc.
@@ -32,17 +37,8 @@ class Evidence(str, Enum):
     # def is_drawing_evidence(cls, code: str) -> bool:
     #     return code.startswith("DRAW_")
 
-    # assessment_engine/evidence.py
-
-
-# (Keep the existing Enum definition above)
 
 # --- Evidence Extractor Functions ---
-
-from typing import Set  # Make sure Set is imported if not already
-
-# Note: Logging setup should be done once, usually at the top
-# log = logging.getLogger(__name__) # Already defined above if you pasted the Enum code
 
 
 def extract_from_text(text: str) -> Set[Evidence]:

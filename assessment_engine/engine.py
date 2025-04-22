@@ -19,13 +19,9 @@ try:
         SubmitTextResponseMessage,
     )
 
-    IncomingEvent = Union[
-        DrawStrokeMessage, ActionCompleteMessage, SubmitTextResponseMessage
-    ]
+    IncomingEvent = Union[DrawStrokeMessage, ActionCompleteMessage, SubmitTextResponseMessage]
 except ImportError:
-    logging.error(
-        "Could not import Pydantic models. Type checking in process_event limited."
-    )
+    logging.error("Could not import Pydantic models. Type checking in process_event limited.")
     IncomingEvent = Dict[str, Any]
     DrawStrokeMessage = Dict[str, Any]
     ActionCompleteMessage = Dict[str, Any]
@@ -67,9 +63,7 @@ class AssessmentSession:
         Returns a dictionary representing the action to send back, or None.
         """
         if self.assessment_complete:
-            log.warning(
-                f"Task {self.task_id}: Processing event after assessment complete."
-            )
+            log.warning(f"Task {self.task_id}: Processing event after assessment complete.")
             return None
 
         action_to_send: Optional[Dict[str, Any]] = None
@@ -102,11 +96,7 @@ class AssessmentSession:
             ) and "P1_HOW_SOLVE" not in self.probes_asked:
                 # --- ************************* ---
                 probe_to_ask = next(
-                    (
-                        p
-                        for p in self.rules.get("probes", [])
-                        if p["id"] == "P1_HOW_SOLVE"
-                    ),
+                    (p for p in self.rules.get("probes", []) if p["id"] == "P1_HOW_SOLVE"),
                     None,
                 )
                 if probe_to_ask:
@@ -151,8 +141,7 @@ class AssessmentSession:
                 level_assigned = "Unknown (Placeholder)"
                 if sd1_1_rule:
                     required_for_level = {
-                        Evidence(ev_str)
-                        for ev_str in sd1_1_rule.get("required_evidence", [])
+                        Evidence(ev_str) for ev_str in sd1_1_rule.get("required_evidence", [])
                     }
                     if required_for_level.issubset(combined_evidence):
                         level_assigned = sd1_1_rule["level"]
@@ -193,9 +182,7 @@ class AssessmentSession:
                 f"Task {self.task_id}: Added evidence {new_evidence_this_step}. Log now: {self.collected_evidence}"
             )
 
-        log.debug(
-            f"Task {self.task_id}: process_event returning action: {action_to_send}"
-        )
+        log.debug(f"Task {self.task_id}: process_event returning action: {action_to_send}")
         return action_to_send
 
 
@@ -207,12 +194,8 @@ if __name__ == "__main__":
         log.info("\nSession Initialized.")
 
         log.info("\nSimulating draw events...")
-        session.process_event(
-            {"type": "draw_stroke", "task_id": "6x8", "stroke_data": [1]}
-        )
-        session.process_event(
-            {"type": "draw_stroke", "task_id": "6x8", "stroke_data": [2]}
-        )
+        session.process_event({"type": "draw_stroke", "task_id": "6x8", "stroke_data": [1]})
+        session.process_event({"type": "draw_stroke", "task_id": "6x8", "stroke_data": [2]})
 
         log.info("\nSimulating action_complete event...")
         action = session.process_event({"type": "action_complete", "task_id": "6x8"})

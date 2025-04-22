@@ -1,4 +1,4 @@
-# pyproject.toml (Corrected Structure)
+# pyproject.toml (Corrected Structure - v2)
 
 [tool.ruff]
 # General settings can stay here if needed, like target-version
@@ -24,10 +24,11 @@ unfixable = []
 per-file-ignores = {}
 
 [tool.ruff.lint.isort]
+known-first-party = ["assessment_engine", "webserver"] # Help sort project imports
 # Optional: Combine imports onto fewer lines if possible
 # force-wrap-aliases = true
 # combine-as-imports = true
-known_first_party = ["assessment_engine", "webserver"] # Help sort project imports
+
 
 [tool.ruff.format]
 # Use black-compatible formatting.
