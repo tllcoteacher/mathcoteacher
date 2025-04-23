@@ -1,28 +1,51 @@
 # tests/assessment_engine/test_evidence.py
 
-import pytest # Import the pytest library itself (good practice)
-from assessment_engine.evidence import Evidence, extract_evidence_from_event
+import pytest
+from assessment_engine.evidence import Evidence, extract_from_text
 
-# Define our first test function
-def test_extract_draw_line_evidence():
+# Test function for the extract_from_text utility
+def test_extract_from_text_finds_count():
     """
-    Tests that a 'draw_line' event correctly extracts DREW_LINE evidence.
+    Tests that 'count' keyword correctly extracts EVIDENCE_SAID_COUNT
+    and the general ANSWER_TYPED evidence.
     """
-    # 1. Arrange: Create a sample event simulating a draw_line action
-    mock_event = {
-        "action": "draw_line",
-        "payload": {
-            "tool": "pencil",
-            "points": [0, 0, 10, 10], # Example data, content doesn't matter much for this specific test
-            "strokeWidth": 2,
-            "color": "black"
-        }
-    }
+    # 1. Arrange: Define sample input text
+    input_text = "I think I need to count them."
+    expected_evidence = {Evidence.ANSWER_TYPED, Evidence.EVIDENCE_SAID_COUNT}
 
     # 2. Act: Call the function we are testing
-    extracted_evidence = extract_evidence_from_event(mock_event)
+    extracted_evidence = extract_from_text(input_text)
 
     # 3. Assert: Check if the result is what we expect
-    assert extracted_evidence == Evidence.DREW_LINE
+    # Using set comparison handles order differences
+    assert extracted_evidence == expected_evidence
 
-# --- We can add more test functions below later ---
+def test_extract_from_text_finds_only_typed():
+    """
+    Tests that text without specific keywords only extracts ANSWER_TYPED.
+    """
+    # 1. Arrange
+    input_text = "Just moving things around."
+    expected_evidence = {Evidence.ANSWER_TYPED}
+
+    # 2. Act
+    extracted_evidence = extract_from_text(input_text)
+
+    # 3. Assert
+    assert extracted_evidence == expected_evidence
+
+def test_extract_from_text_empty_input():
+    """
+    Tests that empty text returns an empty set of evidence.
+    """
+    # 1. Arrange
+    input_text = ""
+    expected_evidence = set() # An empty set
+
+    # 2. Act
+    extracted_evidence = extract_from_text(input_text)
+
+    # 3. Assert
+    assert extracted_evidence == expected_evidence
+
+# --- Add more test functions for extract_from_text as needed ---
